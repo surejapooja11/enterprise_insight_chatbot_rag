@@ -1,4 +1,5 @@
 import os
+import glob
 from dotenv import load_dotenv #to load .env file so api key available
 from langchain_community.document_loaders import PyPDFLoader  #this load pdf and convert each page in langchain document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -12,30 +13,32 @@ from langchain.chains import create_retrieval_chain
 #Load Api Key
 load_dotenv()
 
-
-#Load PDF's - load pages->conver to object and -> add into list
+# --- Load PDFs dynamically from data folder ---
 documents = []
-pdf_files = [
-    "data/apple10k_2024.pdf",
-    "data/ibm10k_2024.pdf",
-    "data/intel10k_2024.pdf"
-]
+pdf_files = glob.glob(os.path.join("data", "*.pdf"))  # automatically finds all PDFs
 
-for file in pdf_files:
-    loader = PyPDFLoader(file)
-    docs = loader.load()
-    
-    if "apple" in file:
-        company = "Apple"
-    elif "ibm" in file:
-        company = "IBM"
-    elif "intel" in file:
-        company = "Intel"
-    
-    for doc in docs:
-        doc.metadata["company"] = company
-    
-    documents.extend(docs)
+if not pdf_files:
+    print("No PDF files found in 'data/' folder!")
+else:
+    for file in pdf_files:
+        loader = PyPDFLoader(file)
+        docs = loader.load()
+
+        # Optional: add company metadata based on filename
+        filename = os.path.basename(file).lower()
+        if "apple" in filename:
+            company = "Apple"
+        elif "ibm" in filename:
+            company = "IBM"
+        elif "intel" in filename:
+            company = "Intel"
+        else:
+            company = "Unknown"
+
+        for doc in docs:
+            doc.metadata["company"] = company
+
+        documents.extend(docs)
 
 print(f"Loaded {len(documents)} pages")
 
